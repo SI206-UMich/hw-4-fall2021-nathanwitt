@@ -28,7 +28,10 @@ class Customer:
     # Submit_order takes a cashier, a stall and an amount as parameters, 
     # it deducts the amount from the customer’s wallet and calls the receive_payment method on the cashier object
     def submit_order(self, cashier, stall, amount): 
-        pass
+        self.wallet -= amount
+        stall += amount
+        cashier.receive_payment(amount)
+    #DONE
 
     # The __str__ method prints the customer's information.    
     def __str__(self):
@@ -71,8 +74,16 @@ class Cashier:
 
 ## Complete the Stall class here following the instructions in HW_4_instructions_rubric
 class Stall:
-    
-    pass
+    def __init__(self, name, inventory, cost = 7, earnings = 0):
+        self.name = name
+        self.inventory = inventory
+        self.cost = cost
+        self.earnings = earnings
+    #DONE
+
+    def process_order(self, name, quantity):
+        pass
+        #INCOMPLETE
 
 
 class TestAllMethods(unittest.TestCase):
