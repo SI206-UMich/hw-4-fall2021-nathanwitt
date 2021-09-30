@@ -81,10 +81,40 @@ class Stall:
         self.earnings = earnings
     #DONE
 
-    def process_order(self, name, quantity):
-        pass
-        #INCOMPLETE
+    def process_order(self, fname, quantity):
+        if self.has_item(fname, quantity):
+            self.inventory[fname] -= quantity
+        # Add more?
+    
+    def has_item(self, fname, quantity):
+        if self.inventory[fname] >= quantity:
+            return True
+        return False
 
+    def stock_up(self, fname, quantity):
+        if self.inventory[fname] > 0:
+            self.inventory[fname] = quantity
+        else:
+            self.inventory[fname] += quantity
+
+    def compute_cost(self, quantity):
+        return self.cost * quantity
+
+    def __str__(self):
+        print("Hello, we are " + self.name + ". This is the current menu ")
+
+        items_available = 0
+        for item in self.inventory:
+            if self.inventory[item] > 0:
+                items_available += 1
+        count = 0
+        for item in self.inventory:
+            if self.inventory[item] > 0:
+                count += 1
+                print(item)
+                if (count != items_available):
+                    print(", ")
+        print(". We charge $" + self.cost + " per item. We have $" + self.earnings + " in total.")
 
 class TestAllMethods(unittest.TestCase):
     
@@ -158,8 +188,8 @@ class TestAllMethods(unittest.TestCase):
     def test_compute_cost(self):
         #what's wrong with the following statements?
         #can you correct them?
-        self.assertEqual(self.s1.compute_cost(self.s1,5), 51)
-        self.assertEqual(self.s3.compute_cost(self.s3,6), 45)
+        self.assertEqual(self.s1.compute_cost(5), 50)
+        self.assertEqual(self.s3.compute_cost(6), 42)
 
 	# Check that the stall can properly see when it is empty
     def test_has_item(self):
@@ -168,11 +198,13 @@ class TestAllMethods(unittest.TestCase):
         # Test to see if has_item returns True when a stall has enough items left
         # Please follow the instructions below to create three different kinds of test cases 
         # Test case 1: the stall does not have this food item: 
-        
+        self.assertEqual(self.s1.has_item("Fish", 1), False)
+
         # Test case 2: the stall does not have enough food item: 
+        self.assertEqual(self.s1.has_item("Burger", 50), False)
         
         # Test case 3: the stall has the food item of the certain quantity: 
-        pass
+        self.assertEqual(self.s1.has_item("Taco", 50), True))
 
 	# Test validate order
     def test_validate_order(self):
@@ -190,18 +222,44 @@ class TestAllMethods(unittest.TestCase):
 ### Write main function
 def main():
     #Create different objects 
+    inventory1 = {"tenders": 2, "burger": 3, "salad": 4, "sandwich": 10}
+    inventory2 = {"carrot": 6, "pickle": 10, "cucumber", 5}
+
+    cu1 = Customer("Luca", 100)
+    cu2 = Customer("Leo", 105)
+    cu3 = Customer("Livia", 110)
+
+    s1 = Stall("The Lunch Spot", inventory1, 10)
+    s2 = Stall("Veggie Corner", inventory2, 5)
+
+    directory1 = {"The Lunch Spot", "Grain Train", "Veggie Corner"}
+    directory2 = {"Whole Foods", "Trader Joes", "Veggie Corner", "Bill's Store", "The Lunch Spot"}
+
+    ca1 = Cashier("Pauline", directory1)
+    ca2 = Cashier("Paul", directory2)
+
 
     #Try all cases in the validate_order function
     #Below you need to have *each customer instance* try the four cases
     #case 1: the cashier does not have the stall 
-    
+    cu1.validate_order("Pauline", "Trader Joes", "carrot", 1)
+    cu2.validate_order("Pauline", "Trader Joes", "pickle", 2)
+    cu3.validate_order("Paul", "Grain Train", "salad", 3)
+
     #case 2: the casher has the stall, but not enough ordered food or the ordered food item
+    cu1.validate_order("Pauline", "The Lunch Spot", "salad", 5)
+    cu2.validate_order("Pauline", "The Lunch Spot", "pickle", 2)
+    cu3.validate_order("Paul", "Veggie Corner", "cucumber", 10)
     
     #case 3: the customer does not have enough money to pay for the order: 
+    cu1.validate_order("Pauline", "The Lunch Spot", "salad", 50)
+    cu2.validate_order("Pauline", "The Lunch Spot", "burger", 50)
+    cu3.validate_order("Paul", "Veggie Corner", "cucumber", 23)
     
     #case 4: the customer successfully places an order
-
-    pass
+    cu1.validate_order("Pauline", "The Lunch Spot", "salad", 1)
+    cu2.validate_order("Pauline", "The Lunch Spot", "burger", 2)
+    cu3.validate_order("Paul", "Veggie Corner", "cucumber", 3)
 
 if __name__ == "__main__":
 	main()
