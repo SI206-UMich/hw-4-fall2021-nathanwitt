@@ -1,5 +1,8 @@
 
 import unittest
+import io
+import sys
+import random
 
 # The Customer class
 # The Customer class represents a customer who will order from the stalls.
@@ -24,13 +27,22 @@ class Customer:
         else:
             bill = cashier.place_order(stall, item_name, quantity) 
             self.submit_order(cashier, stall, bill) 
-    
+
+            # ADDED - Extra Credit Component
+            cashier.customer_count += 1
+            if cashier.customer_count == 10:
+                if cashier.lucky_draw() == True:
+                    print("You just won $10 in the Lucky Draw!")
+                    self.wallet += 10
+                elif cashier.lucky_draw() == False:
+                    print("You were selected for Lucky Draw but lost, sorry!")
+                cashier.customer_count = 0
+
     # Submit_order takes a cashier, a stall and an amount as parameters, 
     # it deducts the amount from the customer’s wallet and calls the receive_payment method on the cashier object
     def submit_order(self, cashier, stall, amount): 
         self.wallet -= amount
-        stall += amount
-        cashier.receive_payment(amount)
+        cashier.receive_payment(stall, amount)
     #DONE
 
     # The __str__ method prints the customer's information.    
@@ -46,6 +58,9 @@ class Cashier:
     def __init__(self, name, directory =[]):
         self.name = name
         self.directory = directory[:] # make a copy of the directory
+
+        # ADD ON - Extra Credit Component
+        self.customer_count = 0
 
     # Whether the stall is in the cashier's directory
     def has_stall(self, stall):
@@ -71,6 +86,14 @@ class Cashier:
     def __str__(self):
 
         return "Hello, this is the " + self.name + " cashier. We take preloaded market payment cards only. We have " + str(sum([len(category) for category in self.directory.values()])) + " vendors in the farmers' market."
+    
+    # EXTRA CREDIT: Lucky draw function
+    def lucky_draw(self):
+        random.seed()
+        random_pick = random.randint(1, 20)
+        if random_pick == 10:
+            return True
+        return False
 
 ## Complete the Stall class here following the instructions in HW_4_instructions_rubric
 class Stall:
@@ -84,15 +107,15 @@ class Stall:
     def process_order(self, fname, quantity):
         if self.has_item(fname, quantity):
             self.inventory[fname] -= quantity
-        # Add more?
+        # Add more!
     
     def has_item(self, fname, quantity):
-        if self.inventory[fname] >= quantity:
+        if fname in self.inventory and self.inventory[fname] >= quantity:
             return True
         return False
 
     def stock_up(self, fname, quantity):
-        if self.inventory[fname] > 0:
+        if not(fname in self.inventory):
             self.inventory[fname] = quantity
         else:
             self.inventory[fname] += quantity
@@ -204,36 +227,60 @@ class TestAllMethods(unittest.TestCase):
         self.assertEqual(self.s1.has_item("Burger", 50), False)
         
         # Test case 3: the stall has the food item of the certain quantity: 
-        self.assertEqual(self.s1.has_item("Taco", 50), True))
+        self.assertEqual(self.s1.has_item("Taco", 50), True)
 
 	# Test validate order
     def test_validate_order(self):
 		# case 1: test if a customer doesn't have enough money in their wallet to order
-
+        capturedOutput = io.StringIO()
+        sys.stdout = capturedOutput
+        self.f2.validate_order(self.c1, self.s1, "Taco", 16)
+        sys.stdout = sys.__stdout__    
+        self.assertEqual(capturedOutput.getvalue().strip(), "Don't have enough money for that :( Please reload more money!")
+        print(capturedOutput.getvalue())
 		# case 2: test if the stall doesn't have enough food left in stock
-
-		# case 3: check if the cashier can order item from that stall
-        pass
+        capturedOutput = io.StringIO()
+        sys.stdout = capturedOutput
+        self.f2.validate_order(self.c1, self.s1, "Taco", 51)
+        sys.stdout = sys.__stdout__    
+        self.assertEqual(capturedOutput.getvalue().strip(), "Our stall has run out of Taco :( Please try a different stall!")
+        print(capturedOutput.getvalue())
+        # case 3: check if the cashier can order item from that stall
+        self.f2.validate_order(self.c1, self.s1, "Taco", 10)
+        self.assertEqual(self.s1.inventory["Taco"], 40)
 
     # Test if a customer can add money to their wallet
     def test_reload_money(self):
-        pass
+        self.f1.reload_money(50)
+        self.assertEqual(self.f1.wallet, 150)
     
 ### Write main function
 def main():
-    #Create different objects 
-    inventory1 = {"tenders": 2, "burger": 3, "salad": 4, "sandwich": 10}
-    inventory2 = {"carrot": 6, "pickle": 10, "cucumber", 5}
+    #Create different objects
+
+    # used inventory
+    inventory1 = {"tenders": 100, "burger": 100, "salad": 4, "sandwich": 10}
+    inventory2 = {"carrot": 6, "pickle": 10, "cucumber": 100}
+
+    # placeholder inventory
+    inventory3 = {"venison": 1, "beef": 1, "salmon": 1}
 
     cu1 = Customer("Luca", 100)
     cu2 = Customer("Leo", 105)
     cu3 = Customer("Livia", 110)
 
+    # used stalls
     s1 = Stall("The Lunch Spot", inventory1, 10)
     s2 = Stall("Veggie Corner", inventory2, 5)
 
-    directory1 = {"The Lunch Spot", "Grain Train", "Veggie Corner"}
-    directory2 = {"Whole Foods", "Trader Joes", "Veggie Corner", "Bill's Store", "The Lunch Spot"}
+    # placeholder stalls
+    s3 = Stall("Whole Foods", inventory3, 10)
+    s4 = Stall("Trader Joes", inventory3, 5)
+    s5 = Stall("Bill's Store", inventory3, 10)
+    s6 = Stall("Grain Train", inventory3, 5)
+
+    directory1 = [s1, s6, s2]
+    directory2 = [s3, s4, s2, s5, s1]
 
     ca1 = Cashier("Pauline", directory1)
     ca2 = Cashier("Paul", directory2)
@@ -242,24 +289,24 @@ def main():
     #Try all cases in the validate_order function
     #Below you need to have *each customer instance* try the four cases
     #case 1: the cashier does not have the stall 
-    cu1.validate_order("Pauline", "Trader Joes", "carrot", 1)
-    cu2.validate_order("Pauline", "Trader Joes", "pickle", 2)
-    cu3.validate_order("Paul", "Grain Train", "salad", 3)
+    cu1.validate_order(ca1, s4, "carrot", 1)
+    cu2.validate_order(ca1, s4, "pickle", 2)
+    cu3.validate_order(ca2, s6, "salad", 3)
 
     #case 2: the casher has the stall, but not enough ordered food or the ordered food item
-    cu1.validate_order("Pauline", "The Lunch Spot", "salad", 5)
-    cu2.validate_order("Pauline", "The Lunch Spot", "pickle", 2)
-    cu3.validate_order("Paul", "Veggie Corner", "cucumber", 10)
+    cu1.validate_order(ca1, s1, "salad", 5)
+    cu2.validate_order(ca1, s1, "sandwich", 20)
+    cu3.validate_order(ca2, s1, "cucumber", 10)
     
     #case 3: the customer does not have enough money to pay for the order: 
-    cu1.validate_order("Pauline", "The Lunch Spot", "salad", 50)
-    cu2.validate_order("Pauline", "The Lunch Spot", "burger", 50)
-    cu3.validate_order("Paul", "Veggie Corner", "cucumber", 23)
+    cu1.validate_order(ca1, s1, "tenders", 50)
+    cu2.validate_order(ca1, s1, "burger", 50)
+    cu3.validate_order(ca2, s2, "cucumber", 23)
     
     #case 4: the customer successfully places an order
-    cu1.validate_order("Pauline", "The Lunch Spot", "salad", 1)
-    cu2.validate_order("Pauline", "The Lunch Spot", "burger", 2)
-    cu3.validate_order("Paul", "Veggie Corner", "cucumber", 3)
+    cu1.validate_order(ca1, s1, "salad", 1)
+    cu2.validate_order(ca1, s1, "burger", 2)
+    cu3.validate_order(ca2, s2, "cucumber", 3)
 
 if __name__ == "__main__":
 	main()
