@@ -231,21 +231,34 @@ class TestAllMethods(unittest.TestCase):
 
 	# Test validate order
     def test_validate_order(self):
+
 		# case 1: test if a customer doesn't have enough money in their wallet to order
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput
         self.f2.validate_order(self.c1, self.s1, "Taco", 16)
         sys.stdout = sys.__stdout__    
         self.assertEqual(capturedOutput.getvalue().strip(), "Don't have enough money for that :( Please reload more money!")
-        print(capturedOutput.getvalue())
+        print(capturedOutput.getvalue().strip())
+
 		# case 2: test if the stall doesn't have enough food left in stock
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput
         self.f2.validate_order(self.c1, self.s1, "Taco", 51)
         sys.stdout = sys.__stdout__    
         self.assertEqual(capturedOutput.getvalue().strip(), "Our stall has run out of Taco :( Please try a different stall!")
-        print(capturedOutput.getvalue())
-        # case 3: check if the cashier can order item from that stall
+        print(capturedOutput.getvalue().strip())
+
+        # case 3: test if the cashier does not have the stall
+        capturedOutput = io.StringIO()
+        sys.stdout = capturedOutput
+        inventory = {"Burger":40, "Taco":50}
+        self.s4 = Stall("Test Stall", inventory)
+        self.f2.validate_order(self.c1, self.s4, "Taco", 51)
+        sys.stdout = sys.__stdout__    
+        self.assertEqual(capturedOutput.getvalue().strip(), "Sorry, we don't have that vendor stall. Please try a different one.")
+        print(capturedOutput.getvalue().strip())
+
+        # case 4: check if the cashier can order item from that stall
         self.f2.validate_order(self.c1, self.s1, "Taco", 10)
         self.assertEqual(self.s1.inventory["Taco"], 40)
 
